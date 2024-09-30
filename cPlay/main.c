@@ -1,33 +1,37 @@
 #include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
-#define MAX_COUNT 10
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/md5.h>
 
-void ChildProcess(void);
-void ParentProcess(void);
+#define MD5_DIGEST_LENGTH 16
 
-int main(void) {
-  pid_t pid;
+void md5_hash(const char *input, char *output) {
+    unsigned char digest[MD5_DIGEST_LENGTH];
+    MD5_CTX context;
 
-  pid = fork();
-  if (pid == 0)
-    ChildProcess();
-  else
-    ParentProcess();
+    MD5_Init(&context);
+    MD5_Update(&context, input, strlen(input));
+    MD5_Final(digest, &context);
+
+    for (int i = 0; i < MD5_DIGEST_LENGTH; i++) {
+        sprintf(&output[i * 2], "%02x", (unsigned int)digest[i]);
+    }
 }
 
-void ChildProcess(void) {
-  int i;
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <string>\n", argv[0]);
+        return 1;
+    }
 
-  for (i = 1; i <= MAX_COUNT; i++)
-    printf("   This line is from child, value = %d\n", i);
-  printf("   *** Child process is done ***\n");
+    char *input = argv[1];
+    char output[33];  // 32 characters for MD5 hash + 1 for null terminator
+
+    md5_hash(input, output);
+
+    printf("Input: %s\n", input);
+    printf("MD5 Hash: %s\n", output);
+
+    return 0;
 }
 
-void ParentProcess(void) {
-  int i;
-
-  for (i = 1; i <= MAX_COUNT; i++)
-    printf("This line is from parent, value = %d\n", i);
-  printf("*** Parent is done ***\n");
-}
